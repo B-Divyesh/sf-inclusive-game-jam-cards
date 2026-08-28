@@ -66,8 +66,8 @@ Prompt sheet:
 > Use case: stylized-concept. Asset type: wide landing-page hero illustration. Primary request: an overhead tabletop construction scene where five bold paper geometry pieces—a coral circle player, lemon star goal, ink-blue arrow control, mint arch accessibility gate, and sky-blue feedback burst—converge into one tiny playable maze board. Scene/backdrop: warm recycled cream graph paper with subtle fibers and sparse registration marks. Style/medium: sophisticated cut-paper collage with screen-printed ink, clean geometric edges, tactile shadows, editorial children’s museum quality. Composition/framing: wide 3:2 composition, main assembled board centered, generous calm margins, readable at small size. Lighting/mood: gentle top-left studio light, curious and collaborative. Color palette: warm cream, deep navy ink, tomato coral, sunflower yellow, sea-glass mint, clear sky blue. Materials/textures: layered matte paper, slight ink misregistration, no plastic gloss. Constraints: abstract pieces only, no people, no hands, no interface screenshot. Avoid: text, letters, numbers, watermark, logo, gradients, branded characters, photorealistic objects, clutter, neon, purple.
 
 - Generator: factory image deployment through `/opt/fleet/lib/gen-image.sh`
-- Planned source: `assets/src/shape-workshop-hero.png`
-- Planned delivery: responsive WebP in `public/art/`
+- Source: `assets/src/shape-workshop-hero.png` with exact prompt sidecar
+- Delivery: 640 px and 960 px responsive WebP in `public/art/` (21 KB and 43 KB)
 - License: original generated asset produced for this MIT-licensed project.
 
 ## Accessibility notes

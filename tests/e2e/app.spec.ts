@@ -28,3 +28,17 @@ test('surprise route completes on a 390px-class screen', async ({ page }) => {
   await expect(page.locator('.recipe li')).toHaveCount(5);
   await expect(page.locator('[data-download]')).toBeVisible();
 });
+
+test('works after the first visit goes offline', async ({ page, context }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pick five cards');
+  await expect(page.locator('[data-offline]')).toBeVisible();
+  expect(errors).toEqual([]);
+});
