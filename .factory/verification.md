@@ -2,67 +2,81 @@
 
 **Candidate:** `757be366dad70c0435c3de1f817d4b0fa5e5a4be` (`main`)
 
-**Live URL:** <https://inclusive-game-jam-cards.sociobot.in>
+**Live URL:** <https://inclusive-game-jam-cards.sociobot.in/>
 
-**Verified:** 2026-08-28, from a clean checkout. This is an independent release decision, not a re-statement of the builder handoff.
+**Verified:** 2026-08-28 UTC from a clean checkout. Product source was not changed.
 
 ## Decision
 
-**FAIL — do not release this candidate.** The live deployment exactly matches the candidate build, so the failures below are not a deployment-only issue.
+**FAIL — do not release.** The live deployment is byte-for-byte the candidate build, so these are not deployment-only failures.
 
-## Release blockers
+## First required checks
 
-### BLOCKER — required claims contract is absent
+### Claims and demo
 
-The first required check found no `.factory/claims.json` in the clean checkout (`rg --files -g claims.json` returned no file). Therefore no listed claim tests could be run via the demo entry point. The work order explicitly makes a missing manifest release-blocking.
+`.factory/claims.json` does not exist in the clean checkout (`rg --files -g claims.json` found no file). Consequently no declared claim tests could be run through the product demo. The work order explicitly makes this a release blocker.
 
-### CRITICAL — normal card choices generate games that cannot be won
+### Cold first read
 
-The product promises a playable generated prototype, but its independently selectable cards allow impossible states in both the hosted game and downloaded HTML game.
+The live cold screen says “Pick five cards. Make a tiny game.” and “Turn ‘what if?’ into a keyboard-playable browser game—together.” Its primary action is “Start the card jam.” The “Deal me a surprise” button is a working one-click demo: it populates five cards and opens a game.
 
-| Recipe selections | Reproduction on live deployment | Why completion is impossible |
-| --- | --- | --- |
-| Goal **Collect three sparks** + Twist **Bouncy puddles** | Select Arrow keys, Cheering words, Keep it calm; move `Up × 5`, `Right × 2`. Live status says: “Boing! The puddle bounced you back one space.” | One required target is at `(2,1)`, also a puddle. Collision bounces before target collection, so the target can never be collected. |
-| Goal **Collect three sparks** + Twist **Paper walls** | Select Arrow keys, Cheering words, Keep it calm; move `Right × 3`, `Up`. Live status says: “Bump! That shape blocks the way. Try another direction.” | One required target is at `(3,5)`, also a wall. Collision prevents entry. |
+What it does and the first click are clear. It does **not** say the researched audience — an adult and child / first-time makers — in plain words; it says only “a one-sitting game jam for two.” The work order says failure to clearly answer *for whom* fails the candidate.
 
-The same wall condition also occurs for **Wandering block** plus **Keep it calm**, because that accessibility card changes the obstacle to walls. Thus at least 63 of 243 independently selectable recipes (25.9%) are unwinnable: collect+puddles (27), collect+walls (27), and collect+wanderer+calm (9). The deployed JS hash matches the build hash and `src/game.ts` plus `src/exporter.ts` duplicate this collision/target ordering, so downloading does not recover from the defect.
+## Findings
 
-### HIGH — cold first-read does not state the intended audience in plain words
+| Severity | Finding | Fresh evidence |
+|---|---|---|
+| Blocker | Claims contract absent | `.factory/claims.json` is missing, so required claim tests could not be run. |
+| Critical | Generated games can be unwinnable | Select **Collect three sparks / Arrow keys / Bouncy puddles / Cheering words / Keep it calm**, then move `Up × 5`, `Right × 2`. Live status: “Boing! The puddle bounced you back one space.” Required target `(2,1)` is a puddle and collision occurs before collection. Select **Collect three sparks / Arrow keys / Paper walls / Cheering words / Keep it calm**, then `Right × 3`, `Up`. Live status: “Bump! That shape blocks the way.” Required target `(3,5)` is a wall. The same wall state occurs for **Wandering block + Keep it calm**. At least 63/243 card combinations are impossible (collect+puddles: 27; collect+walls: 27; collect+wanderer+calm: 9). `src/game.ts` and generated `src/exporter.ts` perform the same obstacle-before-target handling, so download does not recover. |
+| Blocker | First-read audience requirement fails | The live first screen never identifies an adult and child, family, mentor, or first-time makers. “For two” is not the required plain-language audience. |
+| High | Finished SPA screen has no `<h1>` | After the one-click demo, Playwright found zero `h1` elements. Axe reported moderate `page-has-heading-one`; this violates the stated semantic baseline even though no serious/critical axe finding occurred. |
+| High | Safe service-worker update is not established | Exact live `sw.js` uses fixed `const CACHE = 'shape-workshop-v1'` and cache-first `caches.match(url.pathname)`. Offline reload works, but an application-only deployment that does not change worker source can remain served from the old cached shell. A version-to-version deployment was unavailable, so a safe replacement path could not be demonstrated. |
+| Medium | Mobile links miss the 44×44px touch-target baseline | At 390px: home brand `133×42`, Privacy `52×17`, Terms `44×17`. |
+| Medium | Response hardening is incomplete | Responses have HSTS, no-referrer, nosniff, and restrictive Permissions-Policy but lack CSP and frame control (`X-Frame-Options`/`frame-ancestors`). Lighthouse informational audits say “No CSP found in enforcement mode” and “No frame control policy found.” |
+| Low | Immutable hashed-asset caching absent | JS, CSS, and WebP return `cache-control: public, must-revalidate, max-age=30`, not long-lived immutable caching. |
 
-Cold desktop and 390 px mobile reads say “A one-sitting game jam for two” and “together,” but do not say **adult and child**, family, mentor, or first-time makers anywhere on the first screen. It clearly says what it does and the primary first click is “Start the card jam.” “Deal me a surprise” does take one click to a randomly populated playable recipe and therefore satisfies the sample/demo interaction in substance. Per the work order’s strict first-read rule, “for two” is not a plain answer to *for whom* in the researched brief, so this independently fails that acceptance check.
+## Passing evidence
 
-## Other findings
+### Clean repository checks
 
-### MEDIUM — mobile touch-target requirement is not met
+```text
+npm ci                         PASS — 60 packages installed, 0 vulnerabilities
+npm test                       PASS — 5/5 Vitest tests
+npx playwright test            PASS — 6 project runs; result status passed
+npm run build                  PASS — tsc --noEmit and Vite build
+npm audit --audit-level=high   PASS — 0 vulnerabilities
+```
 
-At the required 390 px viewport, computed live target boxes were: home brand `133 × 42` px, Privacy `52 × 17` px, and Terms `44 × 17` px. These are interactive links below the required 44 × 44 px target size.
+There is no lint script. Build output: JS `24,438 B` (`9.05 kB` gzip), CSS `16,462 B` (`4.46 kB` gzip), hero WebP `21,504/43,792 B`; these meet stated byte budgets.
 
-### MEDIUM — deployment lacks a Content-Security-Policy
+### Deployment identity
 
-Live HTML, JS, CSS, privacy, terms, and service-worker responses have HSTS, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, and a restrictive `Permissions-Policy`, but no `Content-Security-Policy` header. In particular, there is no `frame-ancestors` clickjacking protection.
+Fresh SHA-256 comparisons matched local candidate output to production for `index.html`, `assets/index-D0ZPTU2p.js`, `assets/index-Dksf21UF.css`, `art/shape-workshop-hero-640.webp`, `sw.js`, `privacy/index.html`, and `terms/index.html`.
 
-### LOW — immutable asset caching policy is missing
+### Browser/product QA
 
-The hashed JS/CSS and WebP responses all use `Cache-Control: public, must-revalidate, max-age=30`, not long-lived immutable caching. This misses the static-product caching requirement and unnecessarily revalidates first-load assets.
+- Desktop and 390×844 production sessions had no console/page errors and no mobile horizontal overflow. Main buttons were 51px high; game controls were 46×46px.
+- A valid keyboard-only route (`reach / arrows / puddles / words / patterns`) was selected using Space and won in 12 Arrow-key moves: “You reached the star! You won in 12 moves.” Invalid `x` input did not change moves; lower-edge input announced recovery guidance.
+- Empty-state recovery works: Next begins disabled with “Pick one card to continue”; a selection sets `aria-pressed=true`, announces the selection, and enables Next.
+- `shape-quest-game.html` downloads, contains no external HTTP(S) URL, and runs as a standalone local game with title and `<h1>`; print media displays the paper playtest sheet and hides the workshop.
+- The first Tab exposes the skip link with visible `rgb(39, 126, 174) solid 3px` outline and 4px offset. Reduced-motion emulation changes animation duration to `0.00001s`.
+- Service worker registered at `/sw.js`; after one online visit, an offline reload showed “You’re offline—and everything here still works.” Current cache: `shape-workshop-v1`.
+- Cold network capture requested only the product origin (document, local JS/CSS, local hero). No third-party fonts/scripts, telemetry, analytics, account, API, storage, or sign-in flow exists. Rate-limit and Entra checks are therefore not applicable.
 
-## Evidence from successful checks
+### Accessibility
 
-- Clean install: `npm ci` completed; `npm audit --audit-level=high` found zero vulnerabilities.
-- Repository checks: `npm test` passed (5/5); `npm run test:e2e` passed (3 tests across desktop and mobile = 6 project runs; Playwright result status `passed`); `npm run build` passed, including `tsc --noEmit`. There is no lint script.
-- Production output: JS 24,438 bytes (9,050 gzip), CSS 16,462 bytes (4,462 gzip), responsive hero WebP 21,504/43,792 bytes — within stated byte budgets.
-- Deployed parity: SHA-256 of local `dist/index.html`, `index-D0ZPTU2p.js`, and `index-Dksf21UF.css` exactly matched fresh live responses. The live `index.html` references those same asset hashes.
-- Product path: desktop and 390 px mobile completed the five-card workshop; normal card selection changes, disabled Next before selection, backtracking, keyboard Arrow input, on-screen movement, restart, printable worksheet trigger, and downloaded `shape-quest-game.html` were exercised. The generated 5,506-byte HTML contains no `https://`; executed standalone with no network request or console error, and a Move up click incremented the counter.
-- Keyboard/reduced motion: first Tab exposes the visible skip link (`216 × 44.8` px); Tab/Enter completed all five choices on mobile with no console error. Reduced-motion emulation reports `scroll-behavior: auto` and `0.01 ms` transition/animation durations.
-- Accessibility: independent axe scans on live landing and completed game at desktop and 390 px found zero serious/critical violations; privacy and terms likewise had zero serious/critical violations. The landing has a title, `lang=en`, one h1, main, meaningful hero alt, and no console/page errors in tested flows.
-- Privacy/network: fresh live loads requested only `inclusive-game-jam-cards.sociobot.in`; no third-party scripts/fonts/analytics were observed. Browser checks found no cookies, localStorage, sessionStorage, or IndexedDB; only the disclosed `shape-workshop-v1` service-worker cache.
-- PWA: live service worker registered and `registration.update()` completed against `/sw.js`; after first visit, offline reload rendered the landing h1 and visible offline status with no errors. A second deployed service-worker version was not available, so an actual version-to-version replacement could not be observed.
-- Lighthouse mobile (live; Chromium): Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 1.1 s, TBT 50 ms, CLS 0.
-- Static app only: no API endpoints, product-unlock calls, persistence service, or sign-in flow exist, so API rate-limit and Entra tenant checks are not applicable.
+- Axe live landing page: zero serious/critical findings on desktop and 390px.
+- Axe live completed game: zero serious/critical findings; moderate `page-has-heading-one` and `landmark-complementary-is-top-level`.
+- Axe standalone exported game: zero findings.
+
+### Lighthouse
+
+Lighthouse 13.4.1 mobile run generated Performance **98**, Accessibility **100**, Best Practices **100**, SEO **100**; FCP **1.7 s**, LCP **2.2 s**, TBT **0 ms**, CLS **0**, interactive **1.7 s**. Chromium crashed during full-page screenshot/BFCache collection, so the command exited non-zero; the report is useful measurement evidence, not a clean Lighthouse execution.
 
 ## Retest criteria
 
-1. Add `.factory/claims.json` and run every declared test through the real demo entry point.
-2. Ensure every possible selectable recipe is winnable (or constrain/transform incompatible cards before building) in both hosted and exported games; add exhaustive generation/playability tests.
-3. State the adult-and-child/first-time-maker audience on the cold first screen in plain language.
-4. Correct 44 × 44 px target sizes, add a CSP including `frame-ancestors`, and deploy immutable cache headers for hashed assets.
-5. Re-run this verification against a new committed candidate and live URL.
+1. Add `.factory/claims.json` and run every listed claim via the live demo entry point.
+2. Make every selectable recipe winnable in both hosted and exported games; add exhaustive generation/playability tests.
+3. State the adult-and-child/first-time-maker audience on the cold screen; ensure every SPA state has one meaningful `<h1>` and valid landmark structure.
+4. Fix all 44×44px targets, version and test service-worker update behavior, set immutable hashed-asset caching, and add CSP/frame protections.
+5. Build/deploy a new candidate and request fresh independent verification.
