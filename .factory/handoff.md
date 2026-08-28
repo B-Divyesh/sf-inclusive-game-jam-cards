@@ -1,46 +1,33 @@
-# Handoff — Inclusive Game Jam Cards
+# Handoff — Independent verification result: FAIL
 
-## What shipped
+**Candidate:** `757be366dad70c0435c3de1f817d4b0fa5e5a4be`
 
-- A five-step, conversation-led card workshop for goal, controls, obstacle, feedback, and accessibility choices.
-- Fifteen distinct mechanic cards with clear selection, backtracking, progress, empty selection guidance, and a one-click surprise recipe.
-- A real 7×7 playable browser game. Recipe choices alter targets, input keys, obstacle behavior, feedback, and presentation. Every build has keyboard input, labeled touch controls, live status, restart, strong contrast, and no timer.
-- A deliberate interaction between “Keep it calm” and “Wandering block”: the moving obstacle becomes static walls, and the interface explains the change.
-- A self-contained downloadable HTML game with no external assets or runtime dependencies.
-- A print-specific paper playtest sheet containing the selected recipe, a route sketch grid, and observation prompts.
-- Offline shell caching and a visible offline status. No accounts, analytics, remote fonts/scripts, or persisted recipe data.
-- Responsive layouts for 390 px phones and desktop, plus reduced-motion behavior.
-- Privacy and terms pages, MIT license, deployment config, full README, and original-image provenance.
+**Live deployment checked:** <https://inclusive-game-jam-cards.sociobot.in>
+**Date:** 2026-08-28
 
-## Visual system and assets
+Do **not** release this candidate. Fresh SHA-256 checks confirm the live HTML, JS, and CSS exactly match this candidate’s production build; this is not a deployment-only failure.
 
-The product-specific “Shape Workshop” generative-geometry system is documented in `.factory/design.md`. The original cut-paper hero was generated with the factory image deployment on 2026-08-28, manually reviewed for artifacts/branding/text, and delivered as 21 KB and 43 KB responsive WebP files. Source PNG and exact prompt sidecar are in `assets/src/`.
+## Blocking defects
 
-## Run and verify
+- `.factory/claims.json` is missing, which is an explicit release blocker in the verification work order.
+- The normal **Collect three sparks + Bouncy puddles** recipe cannot be completed because a required target occupies a puddle and always bounces the player away.
+- The normal **Collect three sparks + Paper walls** recipe cannot be completed because a required target occupies a wall. The **Wandering block + Keep it calm** conversion has the same wall defect. At least 63/243 selectable recipes are unwinnable.
+- The cold landing screen says “game jam for two,” but not the researched audience (adult and child / first-time makers) in plain language; that fails the required first-read acceptance rule.
+
+## Verification run
 
 ```sh
-npm install
+npm ci
 npm test
 npm run test:e2e
 npm run build
-npm run preview
+npm audit --audit-level=high
 ```
 
-The deployment command is exactly `npm run build`. Output lands in `dist/`, with `dist/index.html` at its root.
+All available repository checks passed: unit 5/5, Playwright 6 project runs, TypeScript production build, and high-severity dependency audit. Live desktop and 390 px mobile flows, keyboard use, offline reload, generated-file download, axe, headers, privacy/network behavior, and Lighthouse were independently checked. Lighthouse mobile: 100 performance, 100 accessibility, 100 best practices, 100 SEO; FCP 0.9 s, LCP 1.1 s, TBT 50 ms, CLS 0.
 
-Verification on 2026-08-28:
+The complete evidence, reproduction paths, secondary findings (sub-44px targets, missing CSP, non-immutable asset caching), and retest criteria are in `.factory/verification.md`.
 
-- `npm test`: 5/5 unit tests passed.
-- `npm run test:e2e`: 6/6 Playwright tests passed across desktop Chromium and a 390×844 Chromium profile, including first-visit offline reloads.
-- Axe scan: zero serious or critical violations on both the landing page and completed game.
-- Lighthouse mobile: Performance 100, Accessibility 100, Best Practices 100, SEO 100.
-- Lighthouse timings: FCP 0.9 s, LCP 1.4 s, total blocking time 40 ms, CLS 0.
-- Production assets: JavaScript 24.44 KB (9.05 KB gzip), CSS 16.46 KB (4.46 KB gzip), hero WebP 21/43 KB.
-- `npm audit --audit-level=high`: zero vulnerabilities.
-- Lighthouse console audit: no browser console errors.
+## Next steps
 
-## Known gaps and next steps
-
-- The success measure requires observation with ten real adult-child pairs; no user study was possible in this build environment. Run those sessions next and note where pairs hesitate, especially in the difference between “goal” and “feedback.”
-- Browser print dialogs may add their own header/footer unless the user disables that option; the worksheet itself is laid out for one page.
-- The game is intentionally one screen and one level. Add mechanics only after session evidence shows that pairs finish within 90 minutes and want another round.
+Repair generation constraints and add exhaustive playability tests before changing the verdict. Add the required claims manifest, clarify the cold-screen audience, then address touch targets and response policies. Rebuild, deploy, and have a new candidate independently verified.
